@@ -1,4 +1,4 @@
-// myls.go
+// myls.go all in one - first draft
 package main
 
 import (
