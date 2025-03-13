@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"syscall"
 	"time"
 )
@@ -53,8 +54,15 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 			continue
 		}
 		stat := info.Sys().(*syscall.Stat_t)
-		// Use colorizeName for file name output
+		// Use colorizeName for file name output.
 		coloredName := colorizeName(file, info)
+		// If the file is a symbolic link, append the link target.
+		if file.Type()&os.ModeSymlink != 0 {
+			linkTarget, err := os.Readlink(filepath.Join(dir, file.Name()))
+			if err == nil {
+				coloredName = coloredName + " -> " + linkTarget
+			}
+		}
 		fmt.Printf("%s %2d %s %s %6d %s %s\n",
 			getPermissions(info),
 			stat.Nlink,

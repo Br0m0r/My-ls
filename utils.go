@@ -52,6 +52,11 @@ func colorizeName(file fs.DirEntry, info os.FileInfo) string {
 	// Default color reset code
 	reset := "\033[0m"
 
+	// Check for symbolic links first.
+	if file.Type()&os.ModeSymlink != 0 {
+		return "\033[36m" + file.Name() + reset
+	}
+
 	// Directory: Blue
 	if info.IsDir() {
 		return "\033[34m" + file.Name() + reset
@@ -61,12 +66,6 @@ func colorizeName(file fs.DirEntry, info os.FileInfo) string {
 	mode := info.Mode()
 	if mode&0111 != 0 { // any execute bit is set
 		return "\033[32m" + file.Name() + reset
-	}
-
-	// For symbolic links, you could add another check (if needed)
-	// Example (if you want to color symbolic links differently):
-	if mode&os.ModeSymlink != 0 {
-		return "\033[36m" + file.Name() + reset
 	}
 
 	// Default for regular files

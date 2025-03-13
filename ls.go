@@ -8,47 +8,61 @@ import (
 
 // Run handles command-line arguments and calls appropriate functions.
 func Run(args []string) {
-	dir := "." // Default directory
-	flags := parseFlags(args, &dir)
-
-	info, err := os.Stat(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			fmt.Println("Error: No such file or directory:", dir)
-		} else if os.IsPermission(err) {
-			fmt.Println("Error: Permission denied:", dir)
-		} else {
-			fmt.Println("Error:", err)
-		}
-		return
+	flags, paths := parseFlags(args)
+	// Default to current directory if no paths are provided.
+	if len(paths) == 0 {
+		paths = append(paths, ".")
 	}
 
-	// If it's a file, print its name (ignoring `-R`)
-	if !info.IsDir() {
-		fmt.Println(dir)
-		return
-	}
+	multiple := len(paths) > 1
 
-	// Call recursive function if `-R` flag is enabled
-	if flags["R"] {
-		recursiveList(dir, flags)
-	} else {
-		files, err := os.ReadDir(dir)
+	for i, path := range paths {
+		info, err := os.Stat(path)
 		if err != nil {
-			fmt.Println("Error:", err)
-			return
+			if os.IsNotExist(err) {
+				fmt.Println("Error: No such file or directory:", path)
+			} else if os.IsPermission(err) {
+				fmt.Println("Error: Permission denied:", path)
+			} else {
+				fmt.Println("Error:", err)
+			}
+			continue
 		}
 
-		files = filterFiles(files, flags, dir)
+		if multiple {
+			fmt.Println(path + ":")
+		}
 
-		files = sortFiles(files, flags)
-		displayFiles(files, dir, flags)
+		// If it's a file, print its name (ignoring -R)
+		if !info.IsDir() {
+			fmt.Println(path)
+		} else {
+			if flags["R"] {
+				recursiveList(path, flags)
+			} else {
+				files, err := os.ReadDir(path)
+				if err != nil {
+					fmt.Println("Error:", err)
+					continue
+				}
+
+				files = filterFiles(files, flags, path)
+				files = sortFiles(files, flags)
+				displayFiles(files, path, flags)
+			}
+		}
+
+		// Print an empty line between listings for multiple paths.
+		if i < len(paths)-1 {
+			fmt.Println()
+		}
 	}
 }
 
-// parseFlags extracts flags and updates the directory argument.
-func parseFlags(args []string, dir *string) map[string]bool {
+// parseFlags extracts flags and collects non-flag arguments as paths.
+func parseFlags(args []string) (map[string]bool, []string) {
 	flags := map[string]bool{}
+	var paths []string
 
 	for _, arg := range args {
 		if strings.HasPrefix(arg, "-") {
@@ -56,9 +70,8 @@ func parseFlags(args []string, dir *string) map[string]bool {
 				flags[string(char)] = true
 			}
 		} else {
-			*dir = arg // Directory argument
+			paths = append(paths, arg)
 		}
 	}
-
-	return flags
+	return flags, paths
 }
