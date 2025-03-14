@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"strings"
 )
@@ -33,10 +34,24 @@ func Run(args []string) {
 			fmt.Println(path + ":")
 		}
 
-		// If it's a file, print its name (ignoring -R)
 		if !info.IsDir() {
-			fmt.Println(path)
+			// Instead of just printing the file name,
+			// create a pseudo DirEntry for the file.
+			pseudoEntry, err := newPseudoDirEntry(path, path)
+			if err != nil {
+				fmt.Println("Error:", err)
+			} else {
+				// If -l flag is set, display in long format.
+				if flags["l"] {
+					// Since displayLongFormat expects a slice, wrap pseudoEntry in a slice.
+					displayLongFormat([]fs.DirEntry{pseudoEntry}, ".")
+				} else {
+					// Otherwise, display just the file name.
+					fmt.Println(path)
+				}
+			}
 		} else {
+			// Handle directories as before.
 			if flags["R"] {
 				recursiveList(path, flags)
 			} else {
