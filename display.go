@@ -131,10 +131,10 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 // formatModTime formats the modification time like ls -l.
 func formatModTime(info os.FileInfo) string {
 	modTime := info.ModTime()
-	currentYear := time.Now().Year()
-	if modTime.Year() == currentYear {
-		return modTime.Format("Jan 02 15:04")
-	} else {
-		return modTime.Format("Jan 02 2006")
+	now := time.Now()
+	sixMonths := time.Hour * 24 * 365 / 2
+	if now.Sub(modTime) > sixMonths || modTime.Sub(now) > sixMonths {
+		return modTime.Format("Jan _2 2006")
 	}
+	return modTime.Format("Jan _2 15:04")
 }
