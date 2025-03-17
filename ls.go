@@ -2,11 +2,7 @@ package main
 
 import (
 	"fmt"
-<<<<<<< HEAD
-	"io/fs"
-=======
 	"io"
->>>>>>> 98c6a9a (fixed some formatting issues)
 	"os"
 )
 
@@ -66,30 +62,10 @@ func runInternal(args []string, out io.Writer) {
 			fmt.Fprintf(out, "%s:\n", path)
 		}
 
-<<<<<<< HEAD
-		if !info.IsDir() {
-			// Instead of just printing the file name,
-			// create a pseudo DirEntry for the file.
-			pseudoEntry, err := newPseudoDirEntry(path, path)
-			if err != nil {
-				fmt.Println("Error:", err)
-			} else {
-				// If -l flag is set, display in long format.
-				if flags["l"] {
-					// Since displayLongFormat expects a slice, wrap pseudoEntry in a slice.
-					displayLongFormat([]fs.DirEntry{pseudoEntry}, ".")
-				} else {
-					// Otherwise, display just the file name.
-					fmt.Println(path)
-				}
-			}
-=======
 		// If it's a file, simply print its name.
 		if !info.IsDir() {
 			fmt.Fprintf(out, "%s\n", path)
->>>>>>> 98c6a9a (fixed some formatting issues)
 		} else {
-			// Handle directories as before.
 			if flags["R"] {
 				recursiveList(path, flags, out)
 			} else {

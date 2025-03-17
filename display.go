@@ -74,19 +74,6 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 		}
 	}
 
-<<<<<<< HEAD
-	// Print total block count (divided by 2 as ls does) only if not a single file.
-	if !(len(files) == 1 && !files[0].IsDir()) {
-		var totalBlocks int64 = 0
-		for _, file := range files {
-			info, err := file.Info()
-			if err != nil {
-				continue
-			}
-			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
-				totalBlocks += stat.Blocks
-			}
-=======
 	var totalBlocks int64 = 0
 	for _, file := range files {
 		info, err := file.Info()
@@ -95,14 +82,9 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 		}
 		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 			totalBlocks += stat.Blocks
->>>>>>> 98c6a9a (fixed some formatting issues)
 		}
-		fmt.Printf("total %d\n", totalBlocks/2)
 	}
-<<<<<<< HEAD
-=======
 	fmt.Fprintf(out, "total %d\n", totalBlocks/2)
->>>>>>> 98c6a9a (fixed some formatting issues)
 
 	for _, file := range files {
 		info, err := file.Info()
@@ -125,13 +107,7 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 		} else {
 			sizeField = fmt.Sprintf("%d", info.Size())
 		}
-<<<<<<< HEAD
-
-		// Print using dynamic width formatting.
-		fmt.Printf("%s %*d %-*s %-*s %*s %12s %s\n",
-=======
 		fmt.Fprintf(out, "%s %*d %-*s %-*s %*s %12s %s\n",
->>>>>>> 98c6a9a (fixed some formatting issues)
 			getPermissions(info),
 			maxLinksWidth, stat.Nlink,
 			maxOwnerWidth, getOwner(info),

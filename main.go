@@ -4,6 +4,7 @@ import (
 	"os"
 )
 
+// main delegates directly to Run.
 func main() {
-	Run(os.Args[1:]) // Delegates everything to ls package
+	Run(os.Args[1:])
 }
