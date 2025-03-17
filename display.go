@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -10,35 +11,32 @@ import (
 )
 
 // displayFiles prints file names either in long format or in a single horizontal line.
-func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool) {
+func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io.Writer) {
 	if flags["l"] {
-		displayLongFormat(files, dir)
+		displayLongFormat(files, dir, out)
 	} else {
 		for i, file := range files {
 			if i > 0 {
-				fmt.Print("  ")
+				fmt.Fprint(out, "  ")
 			}
 			info, err := file.Info()
 			if err != nil {
-				fmt.Print(file.Name())
+				fmt.Fprint(out, file.Name())
 			} else {
-				fmt.Print(colorizeName(file, info))
+				fmt.Fprint(out, colorizeName(file, info))
 			}
 		}
-		fmt.Println()
+		fmt.Fprintln(out)
 	}
 }
 
 // displayLongFormat prints details in a ls -l style format.
-// It first computes the maximum widths of several columns so that the output is aligned.
-func displayLongFormat(files []fs.DirEntry, dir string) {
-	// First pass: compute maximum widths for links, owner, group, and size fields.
+func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 	maxLinksWidth := 0
 	maxOwnerWidth := 0
 	maxGroupWidth := 0
 	maxSizeWidth := 0
 
-	// We'll store each file's FileInfo in a slice to avoid re-fetching it.
 	var fileInfos []os.FileInfo
 	for _, file := range files {
 		info, err := file.Info()
@@ -65,7 +63,6 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 
 		var sizeField string
 		if info.Mode()&os.ModeDevice != 0 {
-			// For device files, display major and minor numbers.
 			major := (stat.Rdev >> 8) & 0xff
 			minor := stat.Rdev & 0xff
 			sizeField = fmt.Sprintf("%3d, %3d", major, minor)
@@ -77,6 +74,7 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 		}
 	}
 
+<<<<<<< HEAD
 	// Print total block count (divided by 2 as ls does) only if not a single file.
 	if !(len(files) == 1 && !files[0].IsDir()) {
 		var totalBlocks int64 = 0
@@ -88,11 +86,24 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 			if stat, ok := info.Sys().(*syscall.Stat_t); ok {
 				totalBlocks += stat.Blocks
 			}
+=======
+	var totalBlocks int64 = 0
+	for _, file := range files {
+		info, err := file.Info()
+		if err != nil {
+			continue
+		}
+		if stat, ok := info.Sys().(*syscall.Stat_t); ok {
+			totalBlocks += stat.Blocks
+>>>>>>> 98c6a9a (fixed some formatting issues)
 		}
 		fmt.Printf("total %d\n", totalBlocks/2)
 	}
+<<<<<<< HEAD
+=======
+	fmt.Fprintf(out, "total %d\n", totalBlocks/2)
+>>>>>>> 98c6a9a (fixed some formatting issues)
 
-	// Second pass: print each file's details using the computed widths.
 	for _, file := range files {
 		info, err := file.Info()
 		if err != nil {
@@ -100,7 +111,6 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 		}
 		stat := info.Sys().(*syscall.Stat_t)
 		coloredName := colorizeName(file, info)
-		// If the file is a symlink, append its target.
 		if file.Type()&os.ModeSymlink != 0 {
 			linkTarget, err := os.Readlink(filepath.Join(dir, file.Name()))
 			if err == nil {
@@ -115,9 +125,13 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 		} else {
 			sizeField = fmt.Sprintf("%d", info.Size())
 		}
+<<<<<<< HEAD
 
 		// Print using dynamic width formatting.
 		fmt.Printf("%s %*d %-*s %-*s %*s %12s %s\n",
+=======
+		fmt.Fprintf(out, "%s %*d %-*s %-*s %*s %12s %s\n",
+>>>>>>> 98c6a9a (fixed some formatting issues)
 			getPermissions(info),
 			maxLinksWidth, stat.Nlink,
 			maxOwnerWidth, getOwner(info),
@@ -128,7 +142,6 @@ func displayLongFormat(files []fs.DirEntry, dir string) {
 	}
 }
 
-// formatModTime formats the modification time like ls -l.
 func formatModTime(info os.FileInfo) string {
 	modTime := info.ModTime()
 	now := time.Now()
@@ -136,5 +149,5 @@ func formatModTime(info os.FileInfo) string {
 	if now.Sub(modTime) > sixMonths || modTime.Sub(now) > sixMonths {
 		return modTime.Format("Jan _2 2006")
 	}
-	return modTime.Format("Jan _2 15:04")
+	return modTime.Format(" Jan _2 15:04")
 }

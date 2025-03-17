@@ -2,27 +2,27 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
 
-// recursiveList handles `-R` flag and lists directories recursively.
-func recursiveList(dir string, flags map[string]bool) {
-	fmt.Println("\n" + dir + ":")
+// recursiveList handles the -R flag and lists directories recursively.
+// Updated to accept an io.Writer parameter.
+func recursiveList(dir string, flags map[string]bool, out io.Writer) {
+	fmt.Fprintf(out, "\n%s:\n", dir)
 
 	files, err := os.ReadDir(dir)
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Fprintf(out, "Error: %v\n", err)
 		return
 	}
 
 	files = filterFiles(files, flags, dir)
 	files = sortFiles(files, flags)
-	displayFiles(files, dir, flags)
+	displayFiles(files, dir, flags, out)
 
-	// Iterate over directory entries.
 	for _, file := range files {
-		// Skip pseudo entries to avoid infinite recursion.
 		if file.Name() == "." || file.Name() == ".." {
 			continue
 		}
@@ -36,7 +36,7 @@ func recursiveList(dir string, flags map[string]bool) {
 		}
 		if info.IsDir() {
 			subDir := filepath.Join(dir, file.Name())
-			recursiveList(subDir, flags)
+			recursiveList(subDir, flags, out)
 		}
 	}
 }
