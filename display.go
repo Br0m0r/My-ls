@@ -23,7 +23,7 @@ func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io
 			if err != nil {
 				fmt.Fprint(out, file.Name())
 			} else {
-				fmt.Fprint(out, colorizeName(file, info))
+				fmt.Fprint(out, ColorizeName(file, info))
 			}
 		}
 		fmt.Fprintln(out)
@@ -37,13 +37,11 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 	maxGroupWidth := 0
 	maxSizeWidth := 0
 
-	var fileInfos []os.FileInfo
 	for _, file := range files {
 		info, err := file.Info()
 		if err != nil {
 			continue
 		}
-		fileInfos = append(fileInfos, info)
 
 		stat := info.Sys().(*syscall.Stat_t)
 		linksStr := fmt.Sprintf("%d", stat.Nlink)
@@ -51,12 +49,12 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 			maxLinksWidth = len(linksStr)
 		}
 
-		owner := getOwner(info)
+		owner := GetOwner(info)
 		if len(owner) > maxOwnerWidth {
 			maxOwnerWidth = len(owner)
 		}
 
-		group := getGroup(info)
+		group := GetGroup(info)
 		if len(group) > maxGroupWidth {
 			maxGroupWidth = len(group)
 		}
@@ -92,7 +90,7 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 			continue
 		}
 		stat := info.Sys().(*syscall.Stat_t)
-		coloredName := colorizeName(file, info)
+		coloredName := ColorizeName(file, info)
 		if file.Type()&os.ModeSymlink != 0 {
 			linkTarget, err := os.Readlink(filepath.Join(dir, file.Name()))
 			if err == nil {
@@ -108,10 +106,10 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 			sizeField = fmt.Sprintf("%d", info.Size())
 		}
 		fmt.Fprintf(out, "%s %*d %-*s %-*s %*s %12s %s\n",
-			getPermissions(info),
+			GetPermissions(info),
 			maxLinksWidth, stat.Nlink,
-			maxOwnerWidth, getOwner(info),
-			maxGroupWidth, getGroup(info),
+			maxOwnerWidth, GetOwner(info),
+			maxGroupWidth, GetGroup(info),
 			maxSizeWidth, sizeField,
 			formatModTime(info),
 			coloredName)
