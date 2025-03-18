@@ -8,8 +8,8 @@ import (
 )
 
 // recursiveList handles the -R flag and lists directories recursively.
-// Updated to accept an io.Writer parameter.
-func recursiveList(dir string, flags map[string]bool, out io.Writer) {
+// An additional 'capture' parameter is added to control ANSI color output.
+func recursiveList(dir string, flags map[string]bool, capture bool, out io.Writer) {
 	fmt.Fprintf(out, "\n%s:\n", dir)
 
 	files, err := os.ReadDir(dir)
@@ -20,7 +20,8 @@ func recursiveList(dir string, flags map[string]bool, out io.Writer) {
 
 	files = filterFiles(files, flags, dir)
 	files = sortFiles(files, flags)
-	displayFiles(files, dir, flags, out)
+	// Pass capture flag to displayFiles
+	displayFiles(files, dir, flags, out, capture)
 
 	for _, file := range files {
 		if file.Name() == "." || file.Name() == ".." {
@@ -36,7 +37,7 @@ func recursiveList(dir string, flags map[string]bool, out io.Writer) {
 		}
 		if info.IsDir() {
 			subDir := filepath.Join(dir, file.Name())
-			recursiveList(subDir, flags, out)
+			recursiveList(subDir, flags, capture, out)
 		}
 	}
 }

@@ -7,7 +7,11 @@ import (
 
 // ColorizeName returns the file name string with ANSI color codes based on file type.
 // It applies specific colors for symlinks, directories, devices, sockets, executables, etc.
-func ColorizeName(file fs.DirEntry, info os.FileInfo) string {
+func ColorizeName(file fs.DirEntry, info os.FileInfo, capture bool) string {
+	if capture {
+		// Return the name without ANSI codes if output is being captured.
+		return file.Name()
+	}
 	reset := "\033[0m"
 	name := file.Name()
 	mode := info.Mode()
