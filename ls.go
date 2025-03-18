@@ -8,19 +8,19 @@ import (
 )
 
 // Run is the entry point called from main.go.
+// It parses arguments, sets up output, delegates to runInternal, and cleans up resources.
 func Run(args []string) {
-	// Parse command-line options.
 	opts := ParseArgs(args)
-	// Set up output based on capture flag.
-	out := NewOutput(opts.Capture)
+	out, cleanup := NewOutput(opts.Capture)
 	runInternal(opts, out)
+	cleanup()
 }
 
-// runInternal performs the core listing logic.
+// runInternal processes each path (file or directory) using the provided flags.
 func runInternal(opts Options, out io.Writer) {
 	paths := opts.Paths
 	multiple := len(paths) > 1
-	flagMap := opts.ToMap() // convert Options to map[string]bool for legacy functions
+	flagMap := opts.ToMap()
 
 	for i, path := range paths {
 		info, err := os.Stat(path)
@@ -41,16 +41,14 @@ func runInternal(opts Options, out io.Writer) {
 
 		switch {
 		case !info.IsDir():
-			// For files, use long listing if -l flag is set.
 			if opts.Long {
 				pseudo := NewPseudoDirEntry(info, path)
-				// Wrap the pseudo entry in a slice to reuse displayLongFormat.
-				displayLongFormat([]fs.DirEntry{pseudo}, ".", out)
+				displayLongFormat([]fs.DirEntry{pseudo}, ".", out, opts.Capture)
 			} else {
 				fmt.Fprintf(out, "%s\n", path)
 			}
 		case opts.Recursive:
-			recursiveList(path, flagMap, out)
+			recursiveList(path, flagMap, opts.Capture, out)
 		default:
 			files, err := os.ReadDir(path)
 			if err != nil {
@@ -59,7 +57,7 @@ func runInternal(opts Options, out io.Writer) {
 			}
 			files = filterFiles(files, flagMap, path)
 			files = sortFiles(files, flagMap)
-			displayFiles(files, path, flagMap, out)
+			displayFiles(files, path, flagMap, out, opts.Capture)
 		}
 
 		if i < len(paths)-1 {

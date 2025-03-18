@@ -5,18 +5,18 @@ import (
 	"os"
 )
 
-// Options holds parsed flag values.
+// Options holds parsed flag values and file/directory paths.
 type Options struct {
-	Long      bool
-	Recursive bool
-	ShowAll   bool
-	TimeSort  bool
-	Reverse   bool
-	Capture   bool
-	Paths     []string
+	Long      bool     // Use long listing format (-l)
+	Recursive bool     // List directories recursively (-R)
+	ShowAll   bool     // Include hidden entries (-a)
+	TimeSort  bool     // Sort by modification time (-t)
+	Reverse   bool     // Reverse sort order (-r)
+	Capture   bool     // Capture output to a file (-c)
+	Paths     []string // File or directory paths
 }
 
-// ParseArgs processes command-line arguments.
+// ParseArgs processes command-line arguments and returns an Options struct.
 func ParseArgs(args []string) Options {
 	var opts Options
 	for _, arg := range args {
@@ -48,14 +48,13 @@ func ParseArgs(args []string) Options {
 			opts.Paths = append(opts.Paths, arg)
 		}
 	}
-	// Default to current directory if no paths provided.
 	if len(opts.Paths) == 0 {
 		opts.Paths = append(opts.Paths, ".")
 	}
 	return opts
 }
 
-// ToMap converts Options to a map[string]bool for backward compatibility.
+// ToMap converts Options to a map for compatibility.
 func (o Options) ToMap() map[string]bool {
 	return map[string]bool{
 		"l": o.Long,
@@ -66,6 +65,7 @@ func (o Options) ToMap() map[string]bool {
 	}
 }
 
+// printUsage displays usage information.
 func printUsage() {
 	fmt.Println("Usage: run.go [options] [path...]")
 	fmt.Println("Options:")

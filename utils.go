@@ -28,7 +28,10 @@ func NewPseudoDirEntry(info os.FileInfo, name string) fs.DirEntry {
 func GetPermissions(info os.FileInfo) string {
 	mode := info.Mode()
 	var perms string
-	if mode.IsDir() {
+	// Check for symlink first
+	if mode&os.ModeSymlink != 0 {
+		perms = "l"
+	} else if mode.IsDir() {
 		perms = "d"
 	} else if mode&os.ModeDevice != 0 {
 		if mode&os.ModeCharDevice != 0 {
@@ -39,7 +42,7 @@ func GetPermissions(info os.FileInfo) string {
 	} else {
 		perms = "-"
 	}
-
+	// Append permission bits (rwx for user, group, and others)
 	permBits := []rune{'r', 'w', 'x'}
 	for i := 0; i < 9; i++ {
 		if mode&(1<<uint(8-i)) != 0 {
@@ -48,7 +51,6 @@ func GetPermissions(info os.FileInfo) string {
 			perms += "-"
 		}
 	}
-
 	return perms
 }
 

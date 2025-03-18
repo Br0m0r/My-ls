@@ -8,8 +8,8 @@ import (
 
 // pseudoDirEntry implements fs.DirEntry for pseudo entries like "." and "..".
 type pseudoDirEntry struct {
-	name string
-	info os.FileInfo
+	name string      // e.g., "." or ".."
+	info os.FileInfo // File info for the pseudo entry
 }
 
 func (p *pseudoDirEntry) Name() string {
@@ -28,7 +28,7 @@ func (p *pseudoDirEntry) Info() (fs.FileInfo, error) {
 	return p.info, nil
 }
 
-// newPseudoDirEntry creates a pseudoDirEntry for a given path and name.
+// newPseudoDirEntry creates a pseudoDirEntry using os.Stat.
 func newPseudoDirEntry(path string, name string) (fs.DirEntry, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -42,26 +42,21 @@ func getParentDir(dir string) string {
 	return filepath.Dir(dir)
 }
 
-// filterFiles applies filters based on flags.
-// If -a is set, it prepends pseudo entries for "." and ".." to the listing.
+// filterFiles filters directory entries based on the "-a" flag.
+// If "-a" is set, it prepends pseudo entries for "." and "..".
 func filterFiles(files []fs.DirEntry, flags map[string]bool, dir string) []fs.DirEntry {
 	if flags["a"] {
 		var pseudoEntries []fs.DirEntry
-
-		// Create pseudo entry for "."
 		if dotEntry, err := newPseudoDirEntry(dir, "."); err == nil {
 			pseudoEntries = append(pseudoEntries, dotEntry)
 		}
-		// Create pseudo entry for ".."
 		parentDir := getParentDir(dir)
 		if dotDotEntry, err := newPseudoDirEntry(parentDir, ".."); err == nil {
 			pseudoEntries = append(pseudoEntries, dotDotEntry)
 		}
-		// Append the actual files (unfiltered) since -a should show everything.
 		return append(pseudoEntries, files...)
 	}
 
-	// Without -a, filter out files that start with a dot.
 	var visibleFiles []fs.DirEntry
 	for _, file := range files {
 		if len(file.Name()) > 0 && file.Name()[0] != '.' {

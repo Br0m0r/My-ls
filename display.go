@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-// displayFiles prints file names either in long format or in a single horizontal line.
-func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io.Writer) {
+// displayFiles prints file names either in long format (if "-l" is set) or in a single line.
+func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io.Writer, capture bool) {
 	if flags["l"] {
-		displayLongFormat(files, dir, out)
+		displayLongFormat(files, dir, out, capture)
 	} else {
 		for i, file := range files {
 			if i > 0 {
@@ -23,25 +23,27 @@ func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io
 			if err != nil {
 				fmt.Fprint(out, file.Name())
 			} else {
-				fmt.Fprint(out, ColorizeName(file, info))
+				fmt.Fprint(out, ColorizeName(file, info, capture))
 			}
 		}
 		fmt.Fprintln(out)
 	}
 }
 
-// displayLongFormat prints details in a ls -l style format.
-func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
+// displayLongFormat prints detailed file information (like "ls -l").
+func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture bool) {
 	maxLinksWidth := 0
 	maxOwnerWidth := 0
 	maxGroupWidth := 0
 	maxSizeWidth := 0
 
+	var fileInfos []os.FileInfo
 	for _, file := range files {
 		info, err := file.Info()
 		if err != nil {
 			continue
 		}
+		fileInfos = append(fileInfos, info)
 
 		stat := info.Sys().(*syscall.Stat_t)
 		linksStr := fmt.Sprintf("%d", stat.Nlink)
@@ -90,7 +92,7 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 			continue
 		}
 		stat := info.Sys().(*syscall.Stat_t)
-		coloredName := ColorizeName(file, info)
+		coloredName := ColorizeName(file, info, capture)
 		if file.Type()&os.ModeSymlink != 0 {
 			linkTarget, err := os.Readlink(filepath.Join(dir, file.Name()))
 			if err == nil {
@@ -116,6 +118,8 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer) {
 	}
 }
 
+// formatModTime formats the modification time.
+// It prints the year if the file is older than six months (or too far in the future).
 func formatModTime(info os.FileInfo) string {
 	modTime := info.ModTime()
 	now := time.Now()
