@@ -98,10 +98,7 @@ Project Structure
     Contains utility functions for fetching file permissions, owner, and group information.
     (See [utils.go].)
 
-    logger.go
-    Sets up logging to help with error tracking and debugging.
-    (See [logger.go].)
-
+  
     output.go
     Manages output streams, allowing output to be directed to both the console and a file.
     (See [output.go].)
