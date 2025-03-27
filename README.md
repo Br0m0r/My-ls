@@ -33,7 +33,7 @@ Features
 
 Installation
 
-    git clone https://platform.zone01.gr/git/mfoteino/my-ls-1.git
+    git clone https://github.com/Br0m0r/My-ls.git
     go build -o myls 
 
 Usage
