@@ -1,9 +1,22 @@
-package main
+package colorize
 
 import (
 	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 )
+
+// isImageFile checks if the file has an image file extension.
+func isImageFile(name string) bool {
+	ext := strings.ToLower(filepath.Ext(name))
+	switch ext {
+	case ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".webp":
+		return true
+	default:
+		return false
+	}
+}
 
 // ColorizeName returns the file name with ANSI color codes based on its type.
 func ColorizeName(file fs.DirEntry, info os.FileInfo, capture bool) string {
@@ -46,6 +59,11 @@ func ColorizeName(file fs.DirEntry, info os.FileInfo, capture bool) string {
 	// Handle executables.
 	if mode&0111 != 0 {
 		return "\033[32m" + name + reset
+	}
+
+	// Handle image files (regular files with image extensions).
+	if mode.IsRegular() && isImageFile(name) {
+		return "\033[95m" + name + reset // Bright magenta (purple)
 	}
 
 	return name

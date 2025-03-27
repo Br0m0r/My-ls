@@ -1,4 +1,4 @@
-package main
+package display
 
 import (
 	"fmt"
@@ -8,12 +8,15 @@ import (
 	"path/filepath"
 	"syscall"
 	"time"
+
+	"eles/colorize"
+	"eles/utils"
 )
 
-// displayFiles prints file names either in long format (if "-l" is set) or in a single line.
-func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io.Writer, capture bool) {
+// DisplayFiles prints file names either in long format (if flag "l" is set) or in a single line.
+func DisplayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io.Writer, capture bool) {
 	if flags["l"] {
-		displayLongFormat(files, dir, out, capture)
+		DisplayLongFormat(files, dir, out, capture)
 	} else {
 		for i, file := range files {
 			if i > 0 {
@@ -23,15 +26,15 @@ func displayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io
 			if err != nil {
 				fmt.Fprint(out, file.Name())
 			} else {
-				fmt.Fprint(out, ColorizeName(file, info, capture))
+				fmt.Fprint(out, colorize.ColorizeName(file, info, capture))
 			}
 		}
 		fmt.Fprintln(out)
 	}
 }
 
-// displayLongFormat prints detailed file information (like "ls -l").
-func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture bool) {
+// DisplayLongFormat prints detailed file information (like "ls -l").
+func DisplayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture bool) {
 	maxLinksWidth := 0
 	maxOwnerWidth := 0
 	maxGroupWidth := 0
@@ -51,12 +54,12 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture b
 			maxLinksWidth = len(linksStr)
 		}
 
-		owner := GetOwner(info)
+		owner := utils.GetOwner(info)
 		if len(owner) > maxOwnerWidth {
 			maxOwnerWidth = len(owner)
 		}
 
-		group := GetGroup(info)
+		group := utils.GetGroup(info)
 		if len(group) > maxGroupWidth {
 			maxGroupWidth = len(group)
 		}
@@ -92,7 +95,7 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture b
 			continue
 		}
 		stat := info.Sys().(*syscall.Stat_t)
-		coloredName := ColorizeName(file, info, capture)
+		coloredName := colorize.ColorizeName(file, info, capture)
 		if file.Type()&os.ModeSymlink != 0 {
 			linkTarget, err := os.Readlink(filepath.Join(dir, file.Name()))
 			if err == nil {
@@ -108,18 +111,16 @@ func displayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture b
 			sizeField = fmt.Sprintf("%d", info.Size())
 		}
 		fmt.Fprintf(out, "%s %*d %-*s %-*s %*s %12s %s\n",
-			GetPermissions(info),
+			utils.GetPermissions(info),
 			maxLinksWidth, stat.Nlink,
-			maxOwnerWidth, GetOwner(info),
-			maxGroupWidth, GetGroup(info),
+			maxOwnerWidth, utils.GetOwner(info),
+			maxGroupWidth, utils.GetGroup(info),
 			maxSizeWidth, sizeField,
 			formatModTime(info),
 			coloredName)
 	}
 }
 
-// formatModTime formats the modification time.
-// It prints the year if the file is older than six months (or too far in the future).
 func formatModTime(info os.FileInfo) string {
 	modTime := info.ModTime()
 	now := time.Now()

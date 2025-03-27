@@ -1,14 +1,18 @@
-package main
+package recursive
 
 import (
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+
+	"eles/display"
+	"eles/filter"
+	"eles/sort"
 )
 
-// recursiveList lists directories recursively.
-func recursiveList(dir string, flags map[string]bool, capture bool, out io.Writer) {
+// RecursiveList lists directories recursively.
+func RecursiveList(dir string, flags map[string]bool, capture bool, out io.Writer) {
 	fmt.Fprintf(out, "\n%s:\n", dir)
 
 	files, err := os.ReadDir(dir)
@@ -17,9 +21,9 @@ func recursiveList(dir string, flags map[string]bool, capture bool, out io.Write
 		return
 	}
 
-	files = filterFiles(files, flags, dir)
-	files = sortFiles(files, flags)
-	displayFiles(files, dir, flags, out, capture)
+	files = filter.FilterFiles(files, flags, dir)
+	files = sort.SortFiles(files, flags)
+	display.DisplayFiles(files, dir, flags, out, capture)
 
 	for _, file := range files {
 		if file.Name() == "." || file.Name() == ".." {
@@ -34,7 +38,7 @@ func recursiveList(dir string, flags map[string]bool, capture bool, out io.Write
 		}
 		if info.IsDir() {
 			subDir := filepath.Join(dir, file.Name())
-			recursiveList(subDir, flags, capture, out)
+			RecursiveList(subDir, flags, capture, out)
 		}
 	}
 }

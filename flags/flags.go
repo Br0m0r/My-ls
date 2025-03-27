@@ -1,4 +1,4 @@
-package main
+package flags
 
 import (
 	"fmt"
@@ -65,9 +65,8 @@ func (o Options) ToMap() map[string]bool {
 	}
 }
 
-// printUsage displays usage information.
 func printUsage() {
-	fmt.Println("Usage: run.go [options] [path...]")
+	fmt.Println("Usage: myls [options] [path...]")
 	fmt.Println("Options:")
 	fmt.Println("  -l   Use long listing format")
 	fmt.Println("  -R   List subdirectories recursively")

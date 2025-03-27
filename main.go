@@ -1,10 +1,11 @@
 package main
 
 import (
+	"eles/ls"
 	"os"
 )
 
 // main delegates directly to Run.
 func main() {
-	Run(os.Args[1:])
+	ls.Run(os.Args[1:])
 }

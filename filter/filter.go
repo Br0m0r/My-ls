@@ -1,4 +1,4 @@
-package main
+package filter
 
 import (
 	"io/fs"
@@ -29,7 +29,7 @@ func (p *pseudoDirEntry) Info() (fs.FileInfo, error) {
 }
 
 // newPseudoDirEntry creates a pseudoDirEntry using os.Stat.
-func newPseudoDirEntry(path string, name string) (fs.DirEntry, error) {
+func NewPseudoDirEntry(path string, name string) (fs.DirEntry, error) {
 	info, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -38,20 +38,26 @@ func newPseudoDirEntry(path string, name string) (fs.DirEntry, error) {
 }
 
 // getParentDir returns the parent directory of the given directory.
-func getParentDir(dir string) string {
+// If the directory is ".", it resolves the absolute path to determine its actual parent.
+func GetParentDir(dir string) string {
+	if dir == "." {
+		if wd, err := os.Getwd(); err == nil {
+			return filepath.Dir(wd)
+		}
+	}
 	return filepath.Dir(dir)
 }
 
 // filterFiles filters directory entries based on the "-a" flag.
 // If "-a" is set, it prepends pseudo entries for "." and "..".
-func filterFiles(files []fs.DirEntry, flags map[string]bool, dir string) []fs.DirEntry {
+func FilterFiles(files []fs.DirEntry, flags map[string]bool, dir string) []fs.DirEntry {
 	if flags["a"] {
 		var pseudoEntries []fs.DirEntry
-		if dotEntry, err := newPseudoDirEntry(dir, "."); err == nil {
+		if dotEntry, err := NewPseudoDirEntry(dir, "."); err == nil {
 			pseudoEntries = append(pseudoEntries, dotEntry)
 		}
-		parentDir := getParentDir(dir)
-		if dotDotEntry, err := newPseudoDirEntry(parentDir, ".."); err == nil {
+		parentDir := GetParentDir(dir)
+		if dotDotEntry, err := NewPseudoDirEntry(parentDir, ".."); err == nil {
 			pseudoEntries = append(pseudoEntries, dotDotEntry)
 		}
 		return append(pseudoEntries, files...)

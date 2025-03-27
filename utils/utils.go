@@ -1,4 +1,4 @@
-package main
+package utils
 
 import (
 	"fmt"
@@ -28,29 +28,101 @@ func NewPseudoDirEntry(info os.FileInfo, name string) fs.DirEntry {
 func GetPermissions(info os.FileInfo) string {
 	mode := info.Mode()
 	var perms string
-	// Check for symlink first
-	if mode&os.ModeSymlink != 0 {
+
+	// File type.
+	switch {
+	case mode&os.ModeSymlink != 0:
 		perms = "l"
-	} else if mode.IsDir() {
+	case mode.IsDir():
 		perms = "d"
-	} else if mode&os.ModeDevice != 0 {
+	case mode&os.ModeDevice != 0:
 		if mode&os.ModeCharDevice != 0 {
 			perms = "c"
 		} else {
 			perms = "b"
 		}
-	} else {
+	default:
 		perms = "-"
 	}
-	// Append permission bits (rwx for user, group, and others)
-	permBits := []rune{'r', 'w', 'x'}
-	for i := 0; i < 9; i++ {
-		if mode&(1<<uint(8-i)) != 0 {
-			perms += string(permBits[i%3])
+
+	// Owner permissions.
+	if mode&0400 != 0 {
+		perms += "r"
+	} else {
+		perms += "-"
+	}
+	if mode&0200 != 0 {
+		perms += "w"
+	} else {
+		perms += "-"
+	}
+	// For execute, check setuid.
+	if mode&os.ModeSetuid != 0 {
+		if mode&0100 != 0 {
+			perms += "s"
+		} else {
+			perms += "S"
+		}
+	} else {
+		if mode&0100 != 0 {
+			perms += "x"
 		} else {
 			perms += "-"
 		}
 	}
+
+	// Group permissions.
+	if mode&0040 != 0 {
+		perms += "r"
+	} else {
+		perms += "-"
+	}
+	if mode&0020 != 0 {
+		perms += "w"
+	} else {
+		perms += "-"
+	}
+	// For execute, check setgid.
+	if mode&os.ModeSetgid != 0 {
+		if mode&0010 != 0 {
+			perms += "s"
+		} else {
+			perms += "S"
+		}
+	} else {
+		if mode&0010 != 0 {
+			perms += "x"
+		} else {
+			perms += "-"
+		}
+	}
+
+	// Others permissions.
+	if mode&0004 != 0 {
+		perms += "r"
+	} else {
+		perms += "-"
+	}
+	if mode&0002 != 0 {
+		perms += "w"
+	} else {
+		perms += "-"
+	}
+	// For execute, check sticky bit.
+	if mode&os.ModeSticky != 0 {
+		if mode&0001 != 0 {
+			perms += "t"
+		} else {
+			perms += "T"
+		}
+	} else {
+		if mode&0001 != 0 {
+			perms += "x"
+		} else {
+			perms += "-"
+		}
+	}
+
 	return perms
 }
 
