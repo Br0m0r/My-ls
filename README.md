@@ -33,7 +33,7 @@ Features
 
 Installation
 
-    git clone https://github.com/Br0m0r/My-ls.git
+    git clone https://platform.zone01.gr/git/mfoteino/my-ls-1.git
     go build -o myls 
 
 Usage
@@ -98,7 +98,10 @@ Project Structure
     Contains utility functions for fetching file permissions, owner, and group information.
     (See [utils.go].)
 
-  
+    logger.go
+    Sets up logging to help with error tracking and debugging.
+    (See [logger.go].)
+
     output.go
     Manages output streams, allowing output to be directed to both the console and a file.
     (See [output.go].)

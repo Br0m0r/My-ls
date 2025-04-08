@@ -1,0 +1,71 @@
+go run . 
+ls
+---------
+go run . main.go
+ls main.go
+---------
+go run . colorize
+ls colorize
+---------
+go run . -l
+ls -l
+---------
+go run . -l main.go
+ls -l main.go
+---------
+go run . -l display
+ls -l display
+---------
+go run . -l /usr/bin
+ls -l /usr/bin
+---------
+go run . -R
+ls -R
+---------
+go run . -a
+ls -a
+---------
+go run . -r
+ls -r
+---------
+go run . -t
+ls -t
+---------
+go run . -la              //folder (-) needs the right sorting on output(affects other examples too) FIXED
+ls -la
+---------
+go run . -l -t /home/mfoteino/Projects/my-ls-1
+ls -l -t /home/mfoteino/Projects/my-ls-1
+---------
+go run . -lRr /home/mfoteino/Projects/my-ls-1
+ls -lRr /home/mfoteino/Projects/my-ls-1
+---------
+go run . -l /home/mfoteino/Projects/my-ls-1 -a main.go
+ls -l /home/mfoteino/Projects/my-ls-1 -a main.go
+---------
+go run . -lR /home/mfoteino/Projects/my-ls-1 
+ls -lR /home/mfoteino/Projects/my-ls-1 
+---------
+go run . -la /dev
+ls -la /dev
+---------
+go run . -alRrt
+ls -alRrt
+---------
+go run . --   //prints a new line maybe we dont need(the new line affects other exampels too but its only for formatting issues) FIXED
+ls --
+---------
+ls -l symlink.txt/
+go run . -l symlink.txt/
+---------
+ls -l symlink.txt
+go run . -l symlink.txt  (for using displaylong for single files the total block is also shown maybe we could remove it) FIXED
+---------
+ls -l symlinkdir/
+go run . -l symlinkdir/
+---------
+ls -l symlinkdir
+go run . -l symlinkdir
+---------
+
+

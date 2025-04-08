@@ -13,10 +13,12 @@ import (
 	"eles/utils"
 )
 
-// DisplayFiles prints file names either in long format (if flag "l" is set) or in a single line.
+// DisplayFiles prints file names either in long format (if "-l" flag is set)
+// or in a compact single-line format.
 func DisplayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io.Writer, capture bool) {
 	if flags["l"] {
-		DisplayLongFormat(files, dir, out, capture)
+		// For directory listings, always print the "total" line.
+		DisplayLongFormat(files, dir, out, capture, true)
 	} else {
 		for i, file := range files {
 			if i > 0 {
@@ -29,41 +31,40 @@ func DisplayFiles(files []fs.DirEntry, dir string, flags map[string]bool, out io
 				fmt.Fprint(out, colorize.ColorizeName(file, info, capture))
 			}
 		}
-		fmt.Fprintln(out)
+		if len(files) > 0 {
+			fmt.Fprintln(out)
+		}
 	}
 }
 
-// DisplayLongFormat prints detailed file information (like "ls -l").
-func DisplayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture bool) {
+// DisplayLongFormat prints detailed file information in a long listing format,
+// similar to "ls -l", showing permissions, links, owner, group, size, modification time,
+// and file name. The parameter printTotal indicates whether to print the "total" line.
+func DisplayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture bool, printTotal bool) {
 	maxLinksWidth := 0
 	maxOwnerWidth := 0
 	maxGroupWidth := 0
 	maxSizeWidth := 0
 
-	var fileInfos []os.FileInfo
+	// Calculate maximum widths for formatting.
 	for _, file := range files {
 		info, err := file.Info()
 		if err != nil {
 			continue
 		}
-		fileInfos = append(fileInfos, info)
-
 		stat := info.Sys().(*syscall.Stat_t)
 		linksStr := fmt.Sprintf("%d", stat.Nlink)
 		if len(linksStr) > maxLinksWidth {
 			maxLinksWidth = len(linksStr)
 		}
-
 		owner := utils.GetOwner(info)
 		if len(owner) > maxOwnerWidth {
 			maxOwnerWidth = len(owner)
 		}
-
 		group := utils.GetGroup(info)
 		if len(group) > maxGroupWidth {
 			maxGroupWidth = len(group)
 		}
-
 		var sizeField string
 		if info.Mode()&os.ModeDevice != 0 {
 			major := (stat.Rdev >> 8) & 0xff
@@ -77,6 +78,7 @@ func DisplayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture b
 		}
 	}
 
+	// Sum total blocks.
 	var totalBlocks int64 = 0
 	for _, file := range files {
 		info, err := file.Info()
@@ -87,8 +89,12 @@ func DisplayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture b
 			totalBlocks += stat.Blocks
 		}
 	}
-	fmt.Fprintf(out, "total %d\n", totalBlocks/2)
 
+	if printTotal {
+		fmt.Fprintf(out, "total %d\n", totalBlocks/2)
+	}
+
+	// Print each entry.
 	for _, file := range files {
 		info, err := file.Info()
 		if err != nil {
@@ -96,6 +102,7 @@ func DisplayLongFormat(files []fs.DirEntry, dir string, out io.Writer, capture b
 		}
 		stat := info.Sys().(*syscall.Stat_t)
 		coloredName := colorize.ColorizeName(file, info, capture)
+		// If the file is a symlink, append the link target.
 		if file.Type()&os.ModeSymlink != 0 {
 			linkTarget, err := os.Readlink(filepath.Join(dir, file.Name()))
 			if err == nil {
@@ -128,5 +135,5 @@ func formatModTime(info os.FileInfo) string {
 	if now.Sub(modTime) > sixMonths || modTime.Sub(now) > sixMonths {
 		return modTime.Format("Jan _2 2006")
 	}
-	return modTime.Format(" Jan _2 15:04")
+	return modTime.Format("Jan _2 15:04")
 }

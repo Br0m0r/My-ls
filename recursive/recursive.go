@@ -5,11 +5,26 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"eles/display"
 	"eles/filter"
 	"eles/sort"
 )
+
+// joinDisplayPath joins parent and child directory names, preserving the "./" prefix when the parent is "." or starts with "./".
+func joinDisplayPath(parent, child string) string {
+	if parent == "." {
+		return "./" + child
+	}
+	if strings.HasPrefix(parent, "./") {
+		if strings.HasSuffix(parent, "/") {
+			return parent + child
+		}
+		return parent + "/" + child
+	}
+	return filepath.Join(parent, child)
+}
 
 // RecursiveList lists directories recursively.
 func RecursiveList(dir string, flags map[string]bool, capture bool, out io.Writer) {
@@ -37,7 +52,7 @@ func RecursiveList(dir string, flags map[string]bool, capture bool, out io.Write
 			continue
 		}
 		if info.IsDir() {
-			subDir := filepath.Join(dir, file.Name())
+			subDir := joinDisplayPath(dir, file.Name())
 			RecursiveList(subDir, flags, capture, out)
 		}
 	}

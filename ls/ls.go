@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"strings"
 
 	"eles/display"
 	"eles/filter"
@@ -16,7 +17,7 @@ import (
 )
 
 // Run is the entry point called from cmd/myls/main.go.
-// It parses arguments, sets up output, delegates to runInternal, and cleans up resources.
+// It parses arguments, sets up output, delegates to RunInternal, and cleans up resources.
 func Run(args []string) {
 	opts := flags.ParseArgs(args)
 	out, cleanup := output.NewOutput(opts.Capture)
@@ -24,60 +25,76 @@ func Run(args []string) {
 	cleanup()
 }
 
+// RunInternal separates file and directory arguments.
+// Files are processed first, and then directories.
+// If the recursive flag (-R) is set, each directory is listed recursively.
 func RunInternal(opts flags.Options, out io.Writer) {
 	paths := opts.Paths
-	multiple := len(paths) > 1
 	flagMap := opts.ToMap()
 
-	// First, loop over all arguments and print errors immediately to stderr.
-	// Also collect the valid paths for later processing.
-	var validPaths []string
+	var filePaths []string
+	var dirPaths []string
+
+	// Separate file and directory arguments.
 	for _, path := range paths {
-		if _, err := os.Stat(path); err != nil {
-			if os.IsNotExist(err) {
+		info, err := os.Lstat(path)
+		if err != nil {
+			if strings.Contains(err.Error(), "not a directory") && strings.HasSuffix(path, "/") {
+				fmt.Fprintf(os.Stderr, "my-ls: cannot access '%s': Not a directory\n", path)
+			} else if os.IsNotExist(err) {
 				fmt.Fprintf(os.Stderr, "my-ls: cannot access '%s': No such file or directory\n", path)
 			} else if os.IsPermission(err) {
-				fmt.Fprintf(os.Stderr, "my-ls: cannot open directory '%s': Permission denied\n", path)
+				fmt.Fprintf(os.Stderr, "my-ls: cannot open '%s': Permission denied\n", path)
 			} else {
 				fmt.Fprintf(os.Stderr, "my-ls: %v\n", err)
 			}
+			continue
+		}
+		if info.IsDir() {
+			dirPaths = append(dirPaths, path)
 		} else {
-			validPaths = append(validPaths, path)
+			filePaths = append(filePaths, path)
 		}
 	}
 
-	// Now, process and display the valid paths.
-	for i, path := range validPaths {
-		info, _ := os.Stat(path) // safe since we already checked the error
-		if multiple {
-			fmt.Fprintf(out, "%s:\n", path)
+	// Process file arguments first.
+	for _, path := range filePaths {
+		info, _ := os.Lstat(path)
+		if opts.Long {
+			// For a single file, do not print the "total" line.
+			pseudo := utils.NewPseudoDirEntry(info, path)
+			display.DisplayLongFormat([]fs.DirEntry{pseudo}, ".", out, opts.Capture, false)
+		} else {
+			fmt.Fprintf(out, "%s\n", path)
 		}
+	}
 
-		switch {
-		// Non-directory: display file directly.
-		case !info.IsDir():
-			if opts.Long {
-				pseudo := utils.NewPseudoDirEntry(info, path)
-				display.DisplayLongFormat([]fs.DirEntry{pseudo}, ".", out, opts.Capture)
-			} else {
-				fmt.Fprintf(out, "%s\n", path)
-			}
-		// Recursive listing for directories if -R is set.
-		case opts.Recursive:
-			recursive.RecursiveList(path, flagMap, opts.Capture, out)
-		// Regular directory listing.
-		default:
-			files, err := os.ReadDir(path)
+	// If both file and directory arguments exist, print a newline as separator.
+	if len(filePaths) > 0 && len(dirPaths) > 0 {
+		fmt.Fprintln(out)
+	}
+
+	// Process directory arguments.
+	// Print header (i.e. directory name + colon) if more than one directory or if files are listed above.
+	multipleHeaders := (len(dirPaths) > 1) || (len(filePaths) > 0)
+	for i, dir := range dirPaths {
+		if multipleHeaders {
+			fmt.Fprintf(out, "%s:\n", dir)
+		}
+		if opts.Recursive {
+			// Recursive listing for directories.
+			recursive.RecursiveList(dir, flagMap, opts.Capture, out)
+		} else {
+			entries, err := os.ReadDir(dir)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "my-ls: %v\n", err)
 				continue
 			}
-			files = filter.FilterFiles(files, flagMap, path)
-			files = sort.SortFiles(files, flagMap)
-			display.DisplayFiles(files, path, flagMap, out, opts.Capture)
+			entries = filter.FilterFiles(entries, flagMap, dir)
+			entries = sort.SortFiles(entries, flagMap)
+			display.DisplayFiles(entries, dir, flagMap, out, opts.Capture)
 		}
-
-		if i < len(validPaths)-1 {
+		if i < len(dirPaths)-1 {
 			fmt.Fprintln(out)
 		}
 	}

@@ -13,14 +13,22 @@ type Options struct {
 	TimeSort  bool     // Sort by modification time (-t)
 	Reverse   bool     // Reverse sort order (-r)
 	Capture   bool     // Capture output to a file (-c)
-	Paths     []string // File or directory paths
+	Paths     []string // File or directory paths provided as arguments
 }
 
-// ParseArgs processes command-line arguments and returns an Options struct.
 func ParseArgs(args []string) Options {
 	var opts Options
+	endOfOptions := false
+
 	for _, arg := range args {
-		if len(arg) > 0 && arg[0] == '-' {
+		// if we haven't seen "--", then any arg starting with '-' is options
+		if !endOfOptions && len(arg) > 0 && arg[0] == '-' {
+			// Special case: if the argument is exactly "--", then subsequent args are literal file names.
+			if arg == "--" {
+				endOfOptions = true
+				continue
+			}
+			// Otherwise, parse each flag character in this argument.
 			for _, ch := range arg[1:] {
 				switch ch {
 				case 'l':
@@ -44,18 +52,25 @@ func ParseArgs(args []string) Options {
 					os.Exit(1)
 				}
 			}
-		} else {
-			opts.Paths = append(opts.Paths, arg)
+			// Move on to the next argument.
+			continue
 		}
+		// Either endOfOptions is true, or the argument doesn't start with '-', so treat as a path.
+		opts.Paths = append(opts.Paths, arg)
 	}
+
+	// Default behavior: if no paths provided, use current directory.
 	if len(opts.Paths) == 0 {
 		opts.Paths = append(opts.Paths, ".")
 	}
 	return opts
 }
 
-// ToMap converts Options to a map for compatibility.
+// ToMap converts Options to a map for compatibility with other functions.
 func (o Options) ToMap() map[string]bool {
+	// ----------------------------------------------------------
+	// Create a Map with Flag Names as Keys and Their Boolean Values
+	// ----------------------------------------------------------
 	return map[string]bool{
 		"l": o.Long,
 		"R": o.Recursive,
@@ -65,8 +80,15 @@ func (o Options) ToMap() map[string]bool {
 	}
 }
 
+// printUsage prints a help message describing how to use the command.
 func printUsage() {
+	// ----------------------------------------------------------
+	// Print General Usage Information
+	// ----------------------------------------------------------
 	fmt.Println("Usage: myls [options] [path...]")
+	// ----------------------------------------------------------
+	// Print a List of Supported Options and Their Descriptions
+	// ----------------------------------------------------------
 	fmt.Println("Options:")
 	fmt.Println("  -l   Use long listing format")
 	fmt.Println("  -R   List subdirectories recursively")
