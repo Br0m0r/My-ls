@@ -21,7 +21,7 @@ func Run(arguments []string) {
 	options := flags.ParseArgs(arguments)
 	outputWriter, cleanupFunc := output.NewOutput(options.Capture)
 	RunInternal(options, outputWriter)
-	cleanup()
+	cleanupFunc()
 }
 
 // RunInternal separates file and directory arguments.
