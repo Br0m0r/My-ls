@@ -19,7 +19,7 @@ func SortKey(name string) string {
 	if strings.HasPrefix(name, ".") {
 		return "3" + strings.ToLower(name[1:])
 	}
-	return "3" + strings.ToLower(name)
+	return "4" + strings.ToLower(name)
 }
 
 // SortFiles orders file entries based on flags.
