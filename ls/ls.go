@@ -16,86 +16,85 @@ import (
 	"eles/utils"
 )
 
-// Run is the entry point called from cmd/myls/main.go.
-// It parses arguments, sets up output, delegates to RunInternal, and cleans up resources.
-func Run(args []string) {
-	opts := flags.ParseArgs(args)
-	out, cleanup := output.NewOutput(opts.Capture)
-	RunInternal(opts, out)
+// Run is the entry point called from main.go.
+func Run(arguments []string) {
+	options := flags.ParseArgs(arguments)
+	outputWriter, cleanupFunc := output.NewOutput(options.Capture)
+	RunInternal(options, outputWriter)
 	cleanup()
 }
 
 // RunInternal separates file and directory arguments.
 // Files are processed first, and then directories.
 // If the recursive flag (-R) is set, each directory is listed recursively.
-func RunInternal(opts flags.Options, out io.Writer) {
-	paths := opts.Paths
-	flagMap := opts.ToMap()
+func RunInternal(options flags.Options, outputWriter io.Writer) {
+	inputPaths := options.Paths
+	optionFlags := options.ToMap()
 
-	var filePaths []string
-	var dirPaths []string
+	var fileArgumentPaths []string
+	var directoryArgumentPaths []string
 
 	// Separate file and directory arguments.
-	for _, path := range paths {
-		info, err := os.Lstat(path)
+	for _, currentPath := range inputPaths {
+		fileInfo, err := os.Lstat(currentPath)
 		if err != nil {
-			if strings.Contains(err.Error(), "not a directory") && strings.HasSuffix(path, "/") {
-				fmt.Fprintf(os.Stderr, "my-ls: cannot access '%s': Not a directory\n", path)
+			if strings.Contains(err.Error(), "not a directory") && strings.HasSuffix(currentPath, "/") {
+				fmt.Fprintf(os.Stderr, "my-ls: cannot access '%s': Not a directory\n", currentPath)
 			} else if os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "my-ls: cannot access '%s': No such file or directory\n", path)
+				fmt.Fprintf(os.Stderr, "my-ls: cannot access '%s': No such file or directory\n", currentPath)
 			} else if os.IsPermission(err) {
-				fmt.Fprintf(os.Stderr, "my-ls: cannot open '%s': Permission denied\n", path)
+				fmt.Fprintf(os.Stderr, "my-ls: cannot open '%s': Permission denied\n", currentPath)
 			} else {
 				fmt.Fprintf(os.Stderr, "my-ls: %v\n", err)
 			}
 			continue
 		}
-		if info.IsDir() {
-			dirPaths = append(dirPaths, path)
+		if fileInfo.IsDir() {
+			directoryArgumentPaths = append(directoryArgumentPaths, currentPath)
 		} else {
-			filePaths = append(filePaths, path)
+			fileArgumentPaths = append(fileArgumentPaths, currentPath)
 		}
 	}
 
 	// Process file arguments first.
-	for _, path := range filePaths {
-		info, _ := os.Lstat(path)
-		if opts.Long {
+	for _, filePath := range fileArgumentPaths {
+		fileInfo, _ := os.Lstat(filePath)
+		if options.Long {
 			// For a single file, do not print the "total" line.
-			pseudo := utils.NewPseudoDirEntry(info, path)
-			display.DisplayLongFormat([]fs.DirEntry{pseudo}, ".", out, opts.Capture, false)
+			pseudoEntry := utils.NewPseudoDirEntry(fileInfo, filePath)
+			display.DisplayLongFormat([]fs.DirEntry{pseudoEntry}, ".", outputWriter, options.Capture, false)
 		} else {
-			fmt.Fprintf(out, "%s\n", path)
+			fmt.Fprintf(outputWriter, "%s\n", filePath)
 		}
 	}
 
 	// If both file and directory arguments exist, print a newline as separator.
-	if len(filePaths) > 0 && len(dirPaths) > 0 {
-		fmt.Fprintln(out)
+	if len(fileArgumentPaths) > 0 && len(directoryArgumentPaths) > 0 {
+		fmt.Fprintln(outputWriter)
 	}
 
 	// Process directory arguments.
 	// Print header (i.e. directory name + colon) if more than one directory or if files are listed above.
-	multipleHeaders := (len(dirPaths) > 1) || (len(filePaths) > 0)
-	for i, dir := range dirPaths {
+	multipleHeaders := (len(directoryArgumentPaths) > 1) || (len(fileArgumentPaths) > 0)
+	for index, directoryPath := range directoryArgumentPaths {
 		if multipleHeaders {
-			fmt.Fprintf(out, "%s:\n", dir)
+			fmt.Fprintf(outputWriter, "%s:\n", directoryPath)
 		}
-		if opts.Recursive {
+		if options.Recursive {
 			// Recursive listing for directories.
-			recursive.RecursiveList(dir, flagMap, opts.Capture, out)
+			recursive.RecursiveList(directoryPath, optionFlags, options.Capture, outputWriter)
 		} else {
-			entries, err := os.ReadDir(dir)
+			directoryEntries, err := os.ReadDir(directoryPath)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "my-ls: %v\n", err)
 				continue
 			}
-			entries = filter.FilterFiles(entries, flagMap, dir)
-			entries = sort.SortFiles(entries, flagMap)
-			display.DisplayFiles(entries, dir, flagMap, out, opts.Capture)
+			directoryEntries = filter.FilterFiles(directoryEntries, optionFlags, directoryPath)
+			directoryEntries = sort.SortFiles(directoryEntries, optionFlags)
+			display.DisplayFiles(directoryEntries, directoryPath, optionFlags, outputWriter, options.Capture)
 		}
-		if i < len(dirPaths)-1 {
-			fmt.Fprintln(out)
+		if index < len(directoryArgumentPaths)-1 {
+			fmt.Fprintln(outputWriter)
 		}
 	}
 }

@@ -13,47 +13,47 @@ import (
 )
 
 // joinDisplayPath joins parent and child directory names, preserving the "./" prefix when the parent is "." or starts with "./".
-func joinDisplayPath(parent, child string) string {
-	if parent == "." {
-		return "./" + child
+func joinDisplayPath(parentPath, childName string) string {
+	if parentPath == "." {
+		return "./" + childName
 	}
-	if strings.HasPrefix(parent, "./") {
-		if strings.HasSuffix(parent, "/") {
-			return parent + child
+	if strings.HasPrefix(parentPath, "./") {
+		if strings.HasSuffix(parentPath, "/") {
+			return parentPath + childName
 		}
-		return parent + "/" + child
+		return parentPath + "/" + childName
 	}
-	return filepath.Join(parent, child)
+	return filepath.Join(parentPath, childName)
 }
 
 // RecursiveList lists directories recursively.
-func RecursiveList(dir string, flags map[string]bool, capture bool, out io.Writer) {
-	fmt.Fprintf(out, "\n%s:\n", dir)
+func RecursiveList(directoryPath string, optionFlags map[string]bool, captureOutput bool, outputWriter io.Writer) {
+	fmt.Fprintf(outputWriter, "\n%s:\n", directoryPath)
 
-	files, err := os.ReadDir(dir)
+	dirEntries, err := os.ReadDir(directoryPath)
 	if err != nil {
-		fmt.Fprintf(out, "Error: %v\n", err)
+		fmt.Fprintf(outputWriter, "Error: %v\n", err)
 		return
 	}
 
-	files = filter.FilterFiles(files, flags, dir)
-	files = sort.SortFiles(files, flags)
-	display.DisplayFiles(files, dir, flags, out, capture)
+	dirEntries = filter.FilterFiles(dirEntries, optionFlags, directoryPath)
+	dirEntries = sort.SortFiles(dirEntries, optionFlags)
+	display.DisplayFiles(dirEntries, directoryPath, optionFlags, outputWriter, captureOutput)
 
-	for _, file := range files {
-		if file.Name() == "." || file.Name() == ".." {
+	for _, entry := range dirEntries {
+		if entry.Name() == "." || entry.Name() == ".." {
 			continue
 		}
-		info, err := file.Info()
+		entryInfo, err := entry.Info()
 		if err != nil {
 			continue
 		}
-		if file.Type()&os.ModeSymlink != 0 {
+		if entry.Type()&os.ModeSymlink != 0 {
 			continue
 		}
-		if info.IsDir() {
-			subDir := joinDisplayPath(dir, file.Name())
-			RecursiveList(subDir, flags, capture, out)
+		if entryInfo.IsDir() {
+			subDirectoryPath := joinDisplayPath(directoryPath, entry.Name())
+			RecursiveList(subDirectoryPath, optionFlags, captureOutput, outputWriter)
 		}
 	}
 }
